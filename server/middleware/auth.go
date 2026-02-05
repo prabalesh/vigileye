@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/vigileye/vigileye/database"
-	"github.com/vigileye/vigileye/utils"
+	"github.com/prabalesh/vigileye/database"
+	"github.com/prabalesh/vigileye/utils"
 )
 
 type contextKey string

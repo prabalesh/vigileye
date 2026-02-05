@@ -6,11 +6,11 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/prabalesh/vigileye/config"
+	"github.com/prabalesh/vigileye/database"
+	"github.com/prabalesh/vigileye/handlers"
+	"github.com/prabalesh/vigileye/middleware"
 	"github.com/rs/cors"
-	"github.com/vigileye/vigileye/config"
-	"github.com/vigileye/vigileye/database"
-	"github.com/vigileye/vigileye/handlers"
-	"github.com/vigileye/vigileye/middleware"
 )
 
 func main() {
@@ -18,7 +18,7 @@ func main() {
 
 	// Connect to Database
 	database.ConnectDB(cfg.DatabaseURL)
-	database.RunMigrations("database/migrations.sql")
+	// database.RunMigrations("database/migrations.sql")
 
 	r := mux.NewRouter()
 

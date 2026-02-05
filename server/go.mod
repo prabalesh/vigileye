@@ -1,4 +1,4 @@
-module github.com/vigileye/vigileye
+module github.com/prabalesh/vigileye
 
 go 1.25.3
 

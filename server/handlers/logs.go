@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/vigileye/vigileye/database"
-	"github.com/vigileye/vigileye/middleware"
-	"github.com/vigileye/vigileye/models"
+	"github.com/prabalesh/vigileye/database"
+	"github.com/prabalesh/vigileye/middleware"
+	"github.com/prabalesh/vigileye/models"
 )
 
 func LogError(w http.ResponseWriter, r *http.Request) {

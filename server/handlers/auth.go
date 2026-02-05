@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/vigileye/vigileye/config"
-	"github.com/vigileye/vigileye/database"
-	"github.com/vigileye/vigileye/middleware"
-	"github.com/vigileye/vigileye/models"
-	"github.com/vigileye/vigileye/utils"
+	"github.com/prabalesh/vigileye/config"
+	"github.com/prabalesh/vigileye/database"
+	"github.com/prabalesh/vigileye/middleware"
+	"github.com/prabalesh/vigileye/models"
+	"github.com/prabalesh/vigileye/utils"
 )
 
 func Register(w http.ResponseWriter, r *http.Request) {
