@@ -1,15 +1,23 @@
-import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Settings, LogOut, Eye } from 'lucide-react';
+import { Link, useLocation, useParams } from 'react-router-dom';
+import { LayoutDashboard, Settings, LogOut, Eye, Server, AlertCircle, BarChart3 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 
 export const Sidebar = () => {
     const location = useLocation();
     const { user, logout } = useAuthStore();
+    const { id } = useParams();
+    const projectId = id ? parseInt(id) : null;
 
     const navItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Settings', href: '/settings', icon: Settings },
     ];
+
+    const projectNavItems = projectId ? [
+        { name: 'Overview', href: `/projects/${projectId}`, icon: BarChart3 },
+        { name: 'Error Groups', href: `/projects/${projectId}/error-groups`, icon: AlertCircle },
+        { name: 'Environments', href: `/projects/${projectId}/environments`, icon: Server },
+    ] : [];
 
     return (
         <div className="flex flex-col w-64 bg-slate-900 border-r border-slate-800 h-full">
@@ -31,8 +39,8 @@ export const Sidebar = () => {
                             key={item.name}
                             to={item.href}
                             className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive
-                                    ? 'bg-blue-600/10 text-blue-500'
-                                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                                ? 'bg-blue-600/10 text-blue-500'
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                                 }`}
                         >
                             <Icon size={20} />
@@ -40,6 +48,29 @@ export const Sidebar = () => {
                         </Link>
                     );
                 })}
+
+                {projectId && (
+                    <div className="pt-6 mt-6 border-t border-slate-800">
+                        <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-500">Project Context</p>
+                        {projectNavItems.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = location.pathname === item.href;
+                            return (
+                                <Link
+                                    key={item.name}
+                                    to={item.href}
+                                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive
+                                        ? 'bg-blue-600/10 text-blue-500'
+                                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                                        }`}
+                                >
+                                    <Icon size={20} />
+                                    <span className="font-medium">{item.name}</span>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
             </nav>
 
             <div className="p-4 border-t border-slate-800 space-y-4">
