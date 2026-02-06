@@ -13,6 +13,6 @@ func main() {
 	database.ConnectDB(cfg.DatabaseURL)
 
 	log.Println("Running migrations...")
-	database.RunMigrations("database/migrations.sql")
+	database.RunMigrations("database/migrations")
 	log.Println("✅ Migrations completed successfully")
 }

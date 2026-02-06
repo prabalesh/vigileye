@@ -38,10 +38,22 @@ func main() {
 	api.HandleFunc("/projects/{id:[0-9]+}", handlers.GetProject).Methods("GET")
 	api.HandleFunc("/projects/{id:[0-9]+}/members", handlers.AddProjectMember).Methods("POST")
 	api.HandleFunc("/projects/{id:[0-9]+}/members/{user_id:[0-9]+}", handlers.RemoveProjectMember).Methods("DELETE")
+	api.HandleFunc("/projects/{id:[0-9]+}/environments", handlers.GetEnvironments).Methods("GET")
+	api.HandleFunc("/projects/{id:[0-9]+}/environments", handlers.CreateEnvironment).Methods("POST")
+	api.HandleFunc("/projects/{id:[0-9]+}/environments/{env_id:[0-9]+}", handlers.UpdateEnvironment).Methods("PATCH")
+	api.HandleFunc("/projects/{id:[0-9]+}/environments/{env_id:[0-9]+}", handlers.DeleteEnvironment).Methods("DELETE")
+	api.HandleFunc("/projects/{id:[0-9]+}/environments/{env_id:[0-9]+}/regenerate-key", handlers.RegenerateEnvironmentKey).Methods("POST")
+
+	api.HandleFunc("/projects/{id:[0-9]+}/error-groups", handlers.GetErrorGroups).Methods("GET")
+	api.HandleFunc("/projects/{id:[0-9]+}/error-groups/{group_id:[0-9]+}", handlers.GetErrorGroupDetail).Methods("GET")
+	api.HandleFunc("/projects/{id:[0-9]+}/error-groups/{group_id:[0-9]+}/occurrences", handlers.GetErrorGroupOccurrences).Methods("GET")
+	api.HandleFunc("/projects/{id:[0-9]+}/error-groups/{group_id:[0-9]+}/resolve", handlers.ResolveErrorGroup).Methods("PATCH")
+	api.HandleFunc("/projects/{id:[0-9]+}/error-groups/{group_id:[0-9]+}/ignore", handlers.IgnoreErrorGroup).Methods("PATCH")
+	api.HandleFunc("/projects/{id:[0-9]+}/error-groups/{group_id:[0-9]+}/reopen", handlers.ReopenErrorGroup).Methods("PATCH")
 
 	api.HandleFunc("/projects/{id:[0-9]+}/errors", handlers.GetErrors).Methods("GET")
 	api.HandleFunc("/projects/{id:[0-9]+}/errors/{error_id:[0-9]+}", handlers.GetErrorDetail).Methods("GET")
-	api.HandleFunc("/projects/{id:[0-9]+}/errors/{error_id:[0-9]+}", handlers.ResolveError).Methods("PATCH")
+	api.HandleFunc("/projects/{id:[0-9]+}/errors/{error_id:[0-9]+}/resolve", handlers.ResolveError).Methods("PATCH")
 
 	// API Key Protected routes
 	logRouter := r.PathPrefix("/api/log").Subrouter()

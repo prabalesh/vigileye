@@ -15,7 +15,7 @@ func GetProjects(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(int)
 
 	rows, err := database.DB.Query(`
-		SELECT p.id, p.name, p.api_key, p.owner_id, p.created_at 
+		SELECT p.id, p.name, p.owner_id, p.created_at 
 		FROM projects p
 		LEFT JOIN project_members pm ON p.id = pm.project_id
 		WHERE p.owner_id = $1 OR pm.user_id = $1
@@ -30,7 +30,7 @@ func GetProjects(w http.ResponseWriter, r *http.Request) {
 	projects := []models.Project{}
 	for rows.Next() {
 		var p models.Project
-		if err := rows.Scan(&p.ID, &p.Name, &p.APIKey, &p.OwnerID, &p.CreatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.OwnerID, &p.CreatedAt); err != nil {
 			continue
 		}
 		projects = append(projects, p)
@@ -50,21 +50,60 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tx, err := database.DB.Begin()
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback()
+
 	var p models.Project
-	err := database.DB.QueryRow(
-		"INSERT INTO projects (name, owner_id) VALUES ($1, $2) RETURNING id, name, api_key, owner_id, created_at",
+	err = tx.QueryRow(
+		"INSERT INTO projects (name, owner_id) VALUES ($1, $2) RETURNING id, name, owner_id, created_at",
 		input.Name, userID,
-	).Scan(&p.ID, &p.Name, &p.APIKey, &p.OwnerID, &p.CreatedAt)
+	).Scan(&p.ID, &p.Name, &p.OwnerID, &p.CreatedAt)
 
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 
-	// Add creator as admin member too
-	_, _ = database.DB.Exec("INSERT INTO project_members (project_id, user_id, role) VALUES ($1, $2, 'admin')", p.ID, userID)
+	// Create default environments
+	envs := []string{"production", "staging", "development"}
+	createdEnvs := []models.Environment{}
 
-	json.NewEncoder(w).Encode(p)
+	for _, name := range envs {
+		var e models.Environment
+		err = tx.QueryRow("INSERT INTO environments (project_id, name) VALUES ($1, $2) RETURNING id, project_id, name, api_key, settings, is_active, created_at", p.ID, name).
+			Scan(&e.ID, &e.ProjectID, &e.Name, &e.APIKey, &e.Settings, &e.IsActive, &e.CreatedAt)
+		if err != nil {
+			http.Error(w, "Database error creating environments", http.StatusInternalServerError)
+			return
+		}
+		createdEnvs = append(createdEnvs, e)
+	}
+
+	// Add creator as admin member
+	_, err = tx.Exec("INSERT INTO project_members (project_id, user_id, role) VALUES ($1, $2, 'admin')", p.ID, userID)
+	if err != nil {
+		http.Error(w, "Database error adding member", http.StatusInternalServerError)
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		http.Error(w, "Database error committing", http.StatusInternalServerError)
+		return
+	}
+
+	type ProjectWithEnvs struct {
+		models.Project
+		Environments []models.Environment `json:"environments"`
+	}
+
+	json.NewEncoder(w).Encode(ProjectWithEnvs{
+		Project:      p,
+		Environments: createdEnvs,
+	})
 }
 
 func GetProject(w http.ResponseWriter, r *http.Request) {
@@ -89,9 +128,9 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 
 	var p models.Project
 	err = database.DB.QueryRow(
-		"SELECT id, name, api_key, owner_id, created_at FROM projects WHERE id = $1",
+		"SELECT id, name, owner_id, created_at FROM projects WHERE id = $1",
 		projectID,
-	).Scan(&p.ID, &p.Name, &p.APIKey, &p.OwnerID, &p.CreatedAt)
+	).Scan(&p.ID, &p.Name, &p.OwnerID, &p.CreatedAt)
 
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)

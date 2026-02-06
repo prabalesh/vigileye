@@ -13,6 +13,7 @@ type contextKey string
 
 const UserIDKey contextKey = "user_id"
 const ProjectIDKey contextKey = "project_id"
+const EnvironmentIDKey contextKey = "environment_id"
 
 func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -58,14 +59,19 @@ func APIKeyMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		var projectID int
-		err := database.DB.QueryRow("SELECT id FROM projects WHERE api_key = $1", apiKey).Scan(&projectID)
+		var projectID, environmentID int
+		err := database.DB.QueryRow(`
+			SELECT project_id, id FROM environments 
+			WHERE api_key = $1 AND is_active = TRUE
+		`, apiKey).Scan(&projectID, &environmentID)
+
 		if err != nil {
 			http.Error(w, "Invalid API Key", http.StatusForbidden)
 			return
 		}
 
 		ctx := context.WithValue(r.Context(), ProjectIDKey, projectID)
+		ctx = context.WithValue(ctx, EnvironmentIDKey, environmentID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
