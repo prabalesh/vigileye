@@ -21,7 +21,7 @@ import {
     ChevronUp,
     Activity
 } from 'lucide-react';
-import { safeFormat, safeFormatDistanceToNow } from '../utils/date';
+import { safeFormat } from '../utils/date';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useQuery } from '@tanstack/react-query';
