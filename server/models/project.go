@@ -5,13 +5,13 @@ import "time"
 type Project struct {
 	ID        int       `json:"id"`
 	Name      string    `json:"name"`
-	OwnerID   int       `json:"ownerId"`
-	CreatedAt time.Time `json:"createdAt"`
+	OwnerID   int       `json:"owner_id"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type ProjectMember struct {
-	ProjectID int       `json:"projectId"`
-	UserID    int       `json:"userId"`
+	ProjectID int       `json:"project_id"`
+	UserID    int       `json:"user_id"`
 	Role      string    `json:"role"`
-	CreatedAt time.Time `json:"createdAt"`
+	CreatedAt time.Time `json:"created_at"`
 }

@@ -15,7 +15,7 @@ import {
     Loader2,
     RotateCcw
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '../utils/date';
 import { useQuery } from '@tanstack/react-query';
 import { useEnvironmentFilter } from '../hooks/useEnvironmentFilter';
 import { useErrorGroupActions } from '../hooks/useErrorGroupActions';
@@ -255,8 +255,8 @@ export const ErrorGroups = () => {
                                         </td>
                                         <td className="px-6 py-5 align-top whitespace-nowrap">
                                             <div className="flex flex-col">
-                                                <span className="text-sm text-white font-medium">{formatDistanceToNow(new Date(group.last_seen))} ago</span>
-                                                <span className="text-[10px] text-slate-500 uppercase font-bold mt-1">First: {formatDistanceToNow(new Date(group.first_seen))} ago</span>
+                                                <span className="text-sm text-white font-medium">{safeFormatDistanceToNow(group.last_seen)} ago</span>
+                                                <span className="text-[10px] text-slate-500 uppercase font-bold mt-1">First: {safeFormatDistanceToNow(group.first_seen)} ago</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-5 align-top text-right">

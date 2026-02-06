@@ -21,7 +21,7 @@ import {
     ChevronUp,
     Activity
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { safeFormat, safeFormatDistanceToNow } from '../utils/date';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useQuery } from '@tanstack/react-query';
@@ -221,7 +221,7 @@ export const ErrorGroupDetail = () => {
                                             <div className="flex items-center gap-6">
                                                 <div className="flex items-center gap-2 text-slate-400">
                                                     <Clock size={16} />
-                                                    <span className="text-xs font-mono">{format(new Date(occ.timestamp), 'HH:mm:ss.SSS')}</span>
+                                                    <span className="text-xs font-mono">{safeFormat(occ.timestamp, 'HH:mm:ss.SSS')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 text-slate-500 border-l border-slate-800 pl-6">
                                                     <User size={14} />
@@ -319,7 +319,7 @@ export const ErrorGroupDetail = () => {
                                         <Calendar className="mt-1 text-slate-500 shrink-0" size={16} />
                                         <div>
                                             <p className="text-[10px] font-black uppercase text-slate-600">First Seen</p>
-                                            <p className="text-xs text-slate-300 font-medium leading-relaxed">{format(new Date(group.first_seen), "MMM d, yyyy 'at' h:mm a")}</p>
+                                            <p className="text-xs text-slate-300 font-medium leading-relaxed">{safeFormat(group.first_seen, "MMM d, yyyy 'at' h:mm a")}</p>
                                         </div>
                                     </div>
 
@@ -327,7 +327,7 @@ export const ErrorGroupDetail = () => {
                                         <RotateCcw className="mt-1 text-slate-500 shrink-0" size={16} />
                                         <div>
                                             <p className="text-[10px] font-black uppercase text-slate-600">Last Seen</p>
-                                            <p className="text-xs text-white font-bold leading-relaxed">{format(new Date(group.last_seen), "MMM d, yyyy 'at' h:mm a")}</p>
+                                            <p className="text-xs text-white font-bold leading-relaxed">{safeFormat(group.last_seen, "MMM d, yyyy 'at' h:mm a")}</p>
                                         </div>
                                     </div>
 

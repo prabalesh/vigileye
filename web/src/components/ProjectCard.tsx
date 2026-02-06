@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { Project } from '../types';
 import { ChevronRight, Clock, Server, Layers } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { safeFormatDistanceToNow } from '../utils/date';
 import { useQuery } from '@tanstack/react-query';
 import { getErrorGroups } from '../api/errorGroups';
 
@@ -33,7 +33,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
                     </h3>
                     <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
                         <Clock size={12} className="mr-1.5" />
-                        {formatDistanceToNow(new Date(project.created_at))} ago
+                        {safeFormatDistanceToNow(project.created_at)} ago
                     </div>
                 </div>
                 <div className="p-2 bg-slate-800 rounded-xl text-slate-500 group-hover:text-blue-400 transition-colors">
