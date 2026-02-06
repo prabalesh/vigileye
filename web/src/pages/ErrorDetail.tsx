@@ -25,11 +25,11 @@ export const ErrorDetail = () => {
         try {
             setIsLoading(true);
             const [projRes, errRes] = await Promise.all([
-                getProject(id!),
-                getErrorDetail(id!, errorId!)
+                getProject(Number(id)),
+                getErrorDetail(Number(id), Number(errorId))
             ]);
-            setProject(projRes.data);
-            setErrorLog(errRes.data);
+            setProject(projRes);
+            setErrorLog(errRes);
         } catch (err) {
             console.error(err);
         } finally {
@@ -41,7 +41,7 @@ export const ErrorDetail = () => {
         if (!errorLog) return;
         try {
             setIsUpdating(true);
-            await resolveError(id!, errorId!, !errorLog.resolved);
+            await resolveError(Number(id), Number(errorId), !errorLog.resolved);
             setErrorLog({ ...errorLog, resolved: !errorLog.resolved });
         } catch (err) {
             console.error(err);
@@ -92,8 +92,8 @@ export const ErrorDetail = () => {
                         onClick={handleToggleResolve}
                         disabled={isUpdating}
                         className={`flex items-center space-x-2 px-6 py-2.5 rounded-xl font-bold transition-all ${errorLog.resolved
-                                ? 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20'
+                            ? 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20'
                             }`}
                     >
                         {isUpdating ? <Loader2 size={20} className="animate-spin" /> : (
@@ -133,7 +133,7 @@ export const ErrorDetail = () => {
                             </div>
                         )}
 
-                        {errorLog.extraData && (
+                        {errorLog.extra_data && (
                             <div className="space-y-4">
                                 <div className="flex items-center space-x-2 text-slate-400">
                                     <Terminal size={18} />
@@ -141,7 +141,7 @@ export const ErrorDetail = () => {
                                 </div>
                                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
                                     <pre className="text-xs font-mono text-blue-400 leading-relaxed">
-                                        {JSON.stringify(errorLog.extraData, null, 2)}
+                                        {JSON.stringify(errorLog.extra_data, null, 2)}
                                     </pre>
                                 </div>
                             </div>
@@ -168,7 +168,7 @@ export const ErrorDetail = () => {
                                         <div className="flex items-center gap-2 mt-1">
                                             <span className="text-xs font-mono bg-slate-800 px-2 py-0.5 rounded text-slate-300 uppercase">{errorLog.source}</span>
                                             {errorLog.method && <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded">{errorLog.method}</span>}
-                                            {errorLog.statusCode && <span className={`text-xs font-mono px-2 py-0.5 rounded ${errorLog.statusCode >= 400 ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>{errorLog.statusCode}</span>}
+                                            {errorLog.status_code && <span className={`text-xs font-mono px-2 py-0.5 rounded ${errorLog.status_code >= 400 ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>{errorLog.status_code}</span>}
                                         </div>
                                     </div>
                                 </div>
@@ -183,16 +183,16 @@ export const ErrorDetail = () => {
                                     <User className="mt-1 text-slate-500" size={18} />
                                     <div>
                                         <p className="text-xs text-slate-500 uppercase font-bold">Affected User</p>
-                                        <p className="text-sm text-slate-300">{errorLog.userId || 'Anonymous User'}</p>
+                                        <p className="text-sm text-slate-300">{errorLog.user_id || 'Anonymous User'}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            {errorLog.userAgent && (
+                            {errorLog.user_agent && (
                                 <div className="pt-4 border-t border-slate-800">
                                     <p className="text-[10px] text-slate-500 uppercase font-bold mb-2">User Agent</p>
                                     <p className="text-xs text-slate-500 leading-relaxed font-mono italic">
-                                        {errorLog.userAgent}
+                                        {errorLog.user_agent}
                                     </p>
                                 </div>
                             )}

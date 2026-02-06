@@ -27,11 +27,11 @@ export const ProjectErrors = () => {
         try {
             setIsLoading(true);
             const [projRes, errRes] = await Promise.all([
-                getProject(id!),
-                getErrors(id!, { level: levelFilter, source: sourceFilter })
+                getProject(Number(id)),
+                getErrors(Number(id), { level: levelFilter, source: sourceFilter })
             ]);
-            setProject(projRes.data);
-            setErrors(errRes.data);
+            setProject(projRes);
+            setErrors(errRes);
         } catch (err) {
             console.error(err);
         } finally {
@@ -40,8 +40,8 @@ export const ProjectErrors = () => {
     };
 
     const copyApiKey = () => {
-        if (project) {
-            navigator.clipboard.writeText(project.apiKey);
+        if (project && project.environments && project.environments.length > 0) {
+            navigator.clipboard.writeText(project.environments[0].api_key);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }
@@ -68,7 +68,7 @@ export const ProjectErrors = () => {
                         <div className="flex-1">
                             <p className="text-[10px] uppercase font-bold text-slate-500 mb-0.5">Project API Key</p>
                             <p className="text-sm font-mono text-slate-300">
-                                {project ? `••••-••••-${project.apiKey.slice(-4)}` : 'Loading...'}
+                                {project && project.environments && project.environments.length > 0 ? `••••-••••-${project.environments[0].api_key.slice(-4)}` : 'Loading...'}
                             </p>
                         </div>
                         <button

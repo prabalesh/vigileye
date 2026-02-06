@@ -4,31 +4,63 @@ export interface User {
     name: string;
 }
 
-export interface Project {
+export interface Environment {
     id: number;
+    project_id: number;
     name: string;
-    apiKey: string;
-    ownerId: number;
-    createdAt: string;
+    api_key: string;
+    settings: Record<string, any>;
+    is_active: boolean;
+    created_at: string;
 }
 
-export type ErrorLevel = 'error' | 'warn' | 'info';
-export type ErrorSource = 'frontend' | 'backend';
+export interface ErrorGroup {
+    id: number;
+    project_id: number;
+    environment_id: number;
+    environment_name?: string;
+    fingerprint: string;
+    message: string;
+    stack?: string;
+    url?: string;
+    source: string;
+    level: ErrorLevel;
+    first_seen: string;
+    last_seen: string;
+    occurrence_count: number;
+    status: 'unresolved' | 'resolved' | 'ignored';
+    resolved_at?: string;
+    resolved_by?: number;
+    created_at: string;
+}
 
 export interface ErrorLog {
     id: number;
-    projectId: number;
+    project_id: number;
+    environment_id: number;
+    error_group_id: number;
     timestamp: string;
-    source: ErrorSource;
+    source: string;
     level: ErrorLevel;
     message: string;
     stack?: string;
     url?: string;
     method?: string;
-    userAgent?: string;
-    userId?: string;
-    statusCode?: number;
-    extraData?: any;
+    user_agent?: string;
+    user_id?: string;
+    status_code?: number;
+    extra_data?: Record<string, any>;
     resolved: boolean;
-    createdAt: string;
+    created_at: string;
 }
+
+export interface Project {
+    id: number;
+    name: string;
+    owner_id: number;
+    created_at: string;
+    environments?: Environment[];
+}
+
+export type ErrorLevel = 'error' | 'warn' | 'info';
+export type ErrorSource = 'frontend' | 'backend';

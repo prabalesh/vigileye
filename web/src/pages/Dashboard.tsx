@@ -19,7 +19,7 @@ export const Dashboard = () => {
     const fetchProjects = async () => {
         try {
             const res = await getProjects();
-            setProjects(res.data);
+            setProjects(res);
         } catch (err) {
             console.error(err);
         } finally {

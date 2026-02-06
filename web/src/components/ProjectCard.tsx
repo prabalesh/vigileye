@@ -23,12 +23,14 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
             <div className="space-y-3">
                 <div className="flex items-center text-sm text-slate-400">
                     <Clock size={16} className="mr-2" />
-                    <span>Created {formatDistanceToNow(new Date(project.createdAt))} ago</span>
+                    <span>Created {formatDistanceToNow(new Date(project.created_at))} ago</span>
                 </div>
-                <div className="flex items-center text-sm text-slate-400">
-                    <AlertCircle size={16} className="mr-2" />
-                    <span>API Key: {project.apiKey.slice(0, 8)}...</span>
-                </div>
+                {project.environments && project.environments.length > 0 && (
+                    <div className="flex items-center text-sm text-slate-400">
+                        <AlertCircle size={16} className="mr-2" />
+                        <span>API Key: {project.environments[0].api_key.slice(0, 8)}...</span>
+                    </div>
+                )}
             </div>
         </Link>
     );
