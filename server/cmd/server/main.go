@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/prabalesh/vigileye/config"
@@ -27,7 +28,14 @@ func main() {
 	auth.HandleFunc("/register", handlers.Register).Methods("POST")
 	auth.HandleFunc("/login", handlers.Login).Methods("POST")
 
-	// Protected routes (JWT)
+	// API Key Protected routes (Ingestion)
+	// We define this BEFORE the general /api prefix to ensure correct matching
+	logRouter := r.PathPrefix("/api/log").Subrouter()
+	logRouter.Use(middleware.RateLimitMiddleware)
+	logRouter.Use(middleware.APIKeyMiddleware)
+	logRouter.HandleFunc("", handlers.LogError).Methods("POST")
+
+	// Protected routes (JWT - Dashboard)
 	api := r.PathPrefix("/api").Subrouter()
 	api.Use(middleware.AuthMiddleware(cfg.JWTSecret))
 
@@ -55,22 +63,32 @@ func main() {
 	api.HandleFunc("/projects/{id:[0-9]+}/errors/{error_id:[0-9]+}", handlers.GetErrorDetail).Methods("GET")
 	api.HandleFunc("/projects/{id:[0-9]+}/errors/{error_id:[0-9]+}/resolve", handlers.ResolveError).Methods("PATCH")
 
-	// API Key Protected routes
-	logRouter := r.PathPrefix("/api/log").Subrouter()
-	logRouter.Use(middleware.RateLimitMiddleware)
-	logRouter.Use(middleware.APIKeyMiddleware)
-	logRouter.HandleFunc("", handlers.LogError).Methods("POST")
-
 	// CORS
-	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:3000"}, // Vite default and common alternatives
+	// Dashboard CORS
+	dashboardCors := cors.New(cors.Options{
+		AllowedOrigins:   cfg.AllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Content-Type", "Authorization", "X-API-Key"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
 		Debug:            cfg.Env == "development",
 	})
 
-	handler := c.Handler(r)
+	// Ingestion CORS (Global)
+	ingestionCors := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"POST", "OPTIONS"},
+		AllowedHeaders: []string{"Content-Type", "X-API-Key"},
+		Debug:          cfg.Env == "development",
+	})
+
+	// Switch CORS based on path
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if strings.HasPrefix(req.URL.Path, "/api/log") {
+			ingestionCors.Handler(r).ServeHTTP(w, req)
+		} else {
+			dashboardCors.Handler(r).ServeHTTP(w, req)
+		}
+	})
 
 	fmt.Printf("Vigileye Server starting on port %s in %s mode...\n", cfg.Port, cfg.Env)
 	log.Fatal(http.ListenAndServe(":"+cfg.Port, handler))

@@ -3,15 +3,17 @@ package config
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	DatabaseURL string
-	JWTSecret   string
-	Port        string
-	Env         string
+	DatabaseURL    string
+	JWTSecret      string
+	Port           string
+	Env            string
+	AllowedOrigins []string
 }
 
 func LoadConfig() Config {
@@ -21,11 +23,23 @@ func LoadConfig() Config {
 	}
 
 	return Config{
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://vigileye:password@localhost:5432/vigileye?sslmode=disable"),
-		JWTSecret:   getEnv("JWT_SECRET", "default-secret-key-at-least-32-chars-long"),
-		Port:        getEnv("PORT", "4000"),
-		Env:         getEnv("ENV", "development"),
+		DatabaseURL:    getEnv("DATABASE_URL", "postgres://vigileye:password@localhost:5432/vigileye?sslmode=disable"),
+		JWTSecret:      getEnv("JWT_SECRET", "default-secret-key-at-least-32-chars-long"),
+		Port:           getEnv("PORT", "4000"),
+		Env:            getEnv("ENV", "development"),
+		AllowedOrigins: parseCommaSeparated(getEnv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")),
 	}
+}
+
+func parseCommaSeparated(s string) []string {
+	if s == "" {
+		return []string{}
+	}
+	parts := strings.Split(s, ",")
+	for i := range parts {
+		parts[i] = strings.TrimSpace(parts[i])
+	}
+	return parts
 }
 
 func getEnv(key, fallback string) string {
