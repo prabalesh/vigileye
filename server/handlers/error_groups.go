@@ -44,6 +44,7 @@ func GetErrorGroups(w http.ResponseWriter, r *http.Request) {
 		SELECT eg.id, eg.project_id, eg.environment_id, eg.fingerprint, eg.message, 
 		       eg.stack, eg.url, eg.source, eg.level, eg.first_seen, eg.last_seen, 
 		       eg.occurrence_count, eg.status, eg.resolved_at, eg.resolved_by, 
+		       eg.last_notified_at, eg.notification_count,
 		       eg.created_at, e.name as environment_name
 		FROM error_groups eg
 		JOIN environments e ON eg.environment_id = e.id
@@ -85,6 +86,7 @@ func GetErrorGroups(w http.ResponseWriter, r *http.Request) {
 			&g.ID, &g.ProjectID, &g.EnvironmentID, &g.Fingerprint, &g.Message,
 			&g.Stack, &g.URL, &g.Source, &g.Level, &g.FirstSeen, &g.LastSeen,
 			&g.OccurrenceCount, &g.Status, &g.ResolvedAt, &g.ResolvedBy,
+			&g.LastNotifiedAt, &g.NotificationCount,
 			&g.CreatedAt, &g.EnvironmentName,
 		)
 		if err != nil {
@@ -121,12 +123,13 @@ func GetErrorGroupDetail(w http.ResponseWriter, r *http.Request) {
 	err = database.DB.QueryRow(`
 		SELECT id, project_id, environment_id, fingerprint, message, stack, url, 
 		       source, level, first_seen, last_seen, occurrence_count, status, 
-		       resolved_at, resolved_by, created_at
+		       resolved_at, resolved_by, last_notified_at, notification_count, created_at
 		FROM error_groups WHERE id = $1 AND project_id = $2
 	`, groupID, projectID).Scan(
 		&g.ID, &g.ProjectID, &g.EnvironmentID, &g.Fingerprint, &g.Message,
 		&g.Stack, &g.URL, &g.Source, &g.Level, &g.FirstSeen, &g.LastSeen,
-		&g.OccurrenceCount, &g.Status, &g.ResolvedAt, &g.ResolvedBy, &g.CreatedAt,
+		&g.OccurrenceCount, &g.Status, &g.ResolvedAt, &g.ResolvedBy,
+		&g.LastNotifiedAt, &g.NotificationCount, &g.CreatedAt,
 	)
 
 	if err != nil {
@@ -168,7 +171,8 @@ func GetErrorGroupOccurrences(w http.ResponseWriter, r *http.Request) {
 	rows, err := database.DB.Query(`
 		SELECT id, project_id, environment_id, error_group_id, timestamp, source, 
 		       level, message, stack, url, method, user_agent, user_id, 
-		       status_code, extra_data, resolved, created_at 
+		       status_code, extra_data, request_body, request_headers, 
+		       response_body, response_time_ms, resolved, created_at 
 		FROM error_logs 
 		WHERE error_group_id = $1 AND project_id = $2 
 		ORDER BY created_at DESC LIMIT $3 OFFSET $4
@@ -186,7 +190,9 @@ func GetErrorGroupOccurrences(w http.ResponseWriter, r *http.Request) {
 		err := rows.Scan(
 			&l.ID, &l.ProjectID, &l.EnvironmentID, &l.ErrorGroupID, &l.Timestamp,
 			&l.Source, &l.Level, &l.Message, &l.Stack, &l.URL, &l.Method,
-			&l.UserAgent, &l.UserID, &l.StatusCode, &l.ExtraData, &l.Resolved, &l.CreatedAt,
+			&l.UserAgent, &l.UserID, &l.StatusCode, &l.ExtraData,
+			&l.RequestBody, &l.RequestHeaders, &l.ResponseBody, &l.ResponseTimeMs,
+			&l.Resolved, &l.CreatedAt,
 		)
 		if err != nil {
 			continue

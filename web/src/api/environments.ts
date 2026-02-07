@@ -24,3 +24,8 @@ export async function regenerateApiKey(projectId: number, envId: number): Promis
     const response = await client.post<{ api_key: string }>(`/api/projects/${projectId}/environments/${envId}/regenerate-key`);
     return response.data;
 }
+
+export async function getEnvironment(projectId: number, envId: number): Promise<Environment> {
+    const response = await client.get<Environment>(`/api/projects/${projectId}/environments/${envId}`);
+    return response.data;
+}

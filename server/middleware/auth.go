@@ -88,6 +88,9 @@ func RequireAdmin(next http.Handler) http.Handler {
 		vars := mux.Vars(r)
 		projectID, _ := strconv.Atoi(vars["id"])
 		if projectID == 0 {
+			projectID, _ = strconv.Atoi(vars["projectId"])
+		}
+		if projectID == 0 {
 			// Try to get from context if not in URL
 			if pid, ok := r.Context().Value(ProjectIDKey).(int); ok {
 				projectID = pid
@@ -103,6 +106,9 @@ func RequireAdmin(next http.Handler) http.Handler {
 		err := database.DB.QueryRow(`
 			SELECT role FROM project_members 
 			WHERE project_id = $1 AND user_id = $2
+			UNION
+			SELECT 'admin' as role FROM projects
+			WHERE id = $1 AND owner_id = $2
 		`, projectID, userID).Scan(&role)
 
 		if err != nil {

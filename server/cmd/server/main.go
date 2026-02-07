@@ -11,6 +11,7 @@ import (
 	"github.com/prabalesh/vigileye/database"
 	"github.com/prabalesh/vigileye/handlers"
 	"github.com/prabalesh/vigileye/middleware"
+	"github.com/prabalesh/vigileye/services"
 	"github.com/rs/cors"
 )
 
@@ -20,6 +21,16 @@ func main() {
 	// Connect to Database
 	database.ConnectDB(cfg.DatabaseURL)
 	// database.RunMigrations("database/migrations.sql")
+
+	// Initialize Telegram Helper Bot (Non-blocking)
+	if cfg.Env != "test" {
+		helperBot, err := services.NewHelperBotService()
+		if err != nil {
+			log.Printf("⚠️  Helper Bot not started: %v", err)
+		} else {
+			go helperBot.Start()
+		}
+	}
 
 	r := mux.NewRouter()
 
@@ -59,6 +70,7 @@ func main() {
 
 	api.HandleFunc("/projects/{id:[0-9]+}/environments", handlers.GetEnvironments).Methods("GET")
 	api.HandleFunc("/projects/{id:[0-9]+}/environments", handlers.CreateEnvironment).Methods("POST")
+	api.HandleFunc("/projects/{id:[0-9]+}/environments/{env_id:[0-9]+}", handlers.GetEnvironment).Methods("GET")
 
 	// Admin-only environment routes
 	adminEnvRouter := api.PathPrefix("/projects/{id:[0-9]+}/environments/{env_id:[0-9]+}").Subrouter()
@@ -77,6 +89,11 @@ func main() {
 	api.HandleFunc("/projects/{id:[0-9]+}/errors", handlers.GetErrors).Methods("GET")
 	api.HandleFunc("/projects/{id:[0-9]+}/errors/{error_id:[0-9]+}", handlers.GetErrorDetail).Methods("GET")
 	api.HandleFunc("/projects/{id:[0-9]+}/errors/{error_id:[0-9]+}/resolve", handlers.ResolveError).Methods("PATCH")
+
+	// Notification routes
+	notifHandler := handlers.NewNotificationHandler(database.DB)
+	api.HandleFunc("/projects/{id:[0-9]+}/environments/{env_id:[0-9]+}/notifications/test", notifHandler.TestTelegramNotification).Methods("POST")
+	api.HandleFunc("/projects/{id:[0-9]+}/environments/{env_id:[0-9]+}/notifications/history", notifHandler.GetNotificationHistory).Methods("GET")
 
 	// CORS
 	// Dashboard CORS

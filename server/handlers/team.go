@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/prabalesh/vigileye/database"
@@ -29,11 +30,11 @@ func GetProjectMembers(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	type MemberInfo struct {
-		UserID    int    `json:"user_id"`
-		Email     string `json:"email"`
-		Name      string `json:"name"`
-		Role      string `json:"role"`
-		CreatedAt string `json:"created_at"`
+		UserID    int       `json:"user_id"`
+		Email     string    `json:"email"`
+		Name      string    `json:"name"`
+		Role      string    `json:"role"`
+		CreatedAt time.Time `json:"created_at"` // Changed to time.Time
 	}
 
 	members := []MemberInfo{}

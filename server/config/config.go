@@ -9,11 +9,13 @@ import (
 )
 
 type Config struct {
-	DatabaseURL    string
-	JWTSecret      string
-	Port           string
-	Env            string
-	AllowedOrigins []string
+	DatabaseURL            string
+	JWTSecret              string
+	Port                   string
+	Env                    string
+	AllowedOrigins         []string
+	TelegramHelperBotToken string
+	BaseURL                string
 }
 
 func LoadConfig() Config {
@@ -23,11 +25,13 @@ func LoadConfig() Config {
 	}
 
 	return Config{
-		DatabaseURL:    getEnv("DATABASE_URL", "postgres://vigileye:password@localhost:5432/vigileye?sslmode=disable"),
-		JWTSecret:      getEnv("JWT_SECRET", "default-secret-key-at-least-32-chars-long"),
-		Port:           getEnv("PORT", "4000"),
-		Env:            getEnv("ENV", "development"),
-		AllowedOrigins: parseCommaSeparated(getEnv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")),
+		DatabaseURL:            getEnv("DATABASE_URL", "postgres://vigileye:password@localhost:5432/vigileye?sslmode=disable"),
+		JWTSecret:              getEnv("JWT_SECRET", "default-secret-key-at-least-32-chars-long"),
+		Port:                   getEnv("PORT", "4000"),
+		Env:                    getEnv("ENV", "development"),
+		AllowedOrigins:         parseCommaSeparated(getEnv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")),
+		TelegramHelperBotToken: getEnv("TELEGRAM_HELPER_BOT_TOKEN", ""),
+		BaseURL:                getEnv("BASE_URL", "http://localhost:5173"),
 	}
 }
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { X, UserPlus, Loader2 } from 'lucide-react';
+import { X, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useProjectMembers } from '../hooks/useProjectMembers';
 

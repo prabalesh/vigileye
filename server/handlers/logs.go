@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/prabalesh/vigileye/config"
 	"github.com/prabalesh/vigileye/database"
 	"github.com/prabalesh/vigileye/middleware"
 	"github.com/prabalesh/vigileye/models"
+	"github.com/prabalesh/vigileye/services"
 	"github.com/prabalesh/vigileye/utils"
 )
 
@@ -95,10 +97,12 @@ func LogError(w http.ResponseWriter, r *http.Request) {
 	_, err = tx.Exec(`
 		INSERT INTO error_logs (
 			project_id, environment_id, error_group_id, timestamp, source, level, message, 
-			stack, url, method, user_agent, user_id, status_code, extra_data
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			stack, url, method, user_agent, user_id, status_code, extra_data,
+			request_body, request_headers, response_body, response_time_ms
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 	`, projectID, environmentID, groupID, input.Timestamp, input.Source, input.Level, input.Message,
-		input.Stack, input.URL, input.Method, input.UserAgent, input.UserID, input.StatusCode, input.ExtraData)
+		input.Stack, input.URL, input.Method, input.UserAgent, input.UserID, input.StatusCode, input.ExtraData,
+		input.RequestBody, input.RequestHeaders, input.ResponseBody, input.ResponseTimeMs)
 
 	if err != nil {
 		fmt.Printf("Error logging to DB: %v\n", err)
@@ -110,6 +114,9 @@ func LogError(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
+
+	// Trigger notifications in the background
+	go triggerNotifications(projectID, environmentID, groupID, input)
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
@@ -146,7 +153,7 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 	}
 	offset, _ := strconv.Atoi(query.Get("offset"))
 
-	sqlQuery := `SELECT id, project_id, environment_id, error_group_id, timestamp, source, level, message, stack, url, method, user_agent, user_id, status_code, extra_data, resolved, created_at 
+	sqlQuery := `SELECT id, project_id, environment_id, error_group_id, timestamp, source, level, message, stack, url, method, user_agent, user_id, status_code, extra_data, request_body, request_headers, response_body, response_time_ms, resolved, created_at 
 	             FROM error_logs WHERE project_id = $1`
 	args := []interface{}{projectID}
 	argIdx := 2
@@ -191,7 +198,7 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 		err := rows.Scan(
 			&l.ID, &l.ProjectID, &l.EnvironmentID, &l.ErrorGroupID, &l.Timestamp, &l.Source, &l.Level, &l.Message,
 			&l.Stack, &l.URL, &l.Method, &l.UserAgent, &l.UserID, &l.StatusCode,
-			&l.ExtraData, &l.Resolved, &l.CreatedAt,
+			&l.ExtraData, &l.RequestBody, &l.RequestHeaders, &l.ResponseBody, &l.ResponseTimeMs, &l.Resolved, &l.CreatedAt,
 		)
 		if err != nil {
 			fmt.Printf("Scan error: %v\n", err)
@@ -226,12 +233,12 @@ func GetErrorDetail(w http.ResponseWriter, r *http.Request) {
 
 	var l models.ErrorLog
 	err = database.DB.QueryRow(`
-		SELECT id, project_id, environment_id, error_group_id, timestamp, source, level, message, stack, url, method, user_agent, user_id, status_code, extra_data, resolved, created_at 
+		SELECT id, project_id, environment_id, error_group_id, timestamp, source, level, message, stack, url, method, user_agent, user_id, status_code, extra_data, request_body, request_headers, response_body, response_time_ms, resolved, created_at 
 		FROM error_logs WHERE id = $1 AND project_id = $2
 	`, errorID, projectID).Scan(
 		&l.ID, &l.ProjectID, &l.EnvironmentID, &l.ErrorGroupID, &l.Timestamp, &l.Source, &l.Level, &l.Message,
 		&l.Stack, &l.URL, &l.Method, &l.UserAgent, &l.UserID, &l.StatusCode,
-		&l.ExtraData, &l.Resolved, &l.CreatedAt,
+		&l.ExtraData, &l.RequestBody, &l.RequestHeaders, &l.ResponseBody, &l.ResponseTimeMs, &l.Resolved, &l.CreatedAt,
 	)
 
 	if err != nil {
@@ -278,4 +285,49 @@ func ResolveError(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
+// triggerNotifications handles sending alerts to various channels
+func triggerNotifications(projectID, environmentID, groupID int, logEntry models.ErrorLog) {
+	// 1. Fetch error group and environment details
+	var eg models.ErrorGroup
+	var env models.Environment
+	var settingsJSON []byte
+
+	err := database.DB.QueryRow(`
+		SELECT eg.id, eg.project_id, eg.environment_id, eg.message, eg.stack, eg.level, 
+		       eg.first_seen, eg.last_seen, eg.occurrence_count, eg.status, eg.last_notified_at
+		FROM error_groups eg
+		WHERE eg.id = $1
+	`, groupID).Scan(
+		&eg.ID, &eg.ProjectID, &eg.EnvironmentID, &eg.Message, &eg.Stack, &eg.Level,
+		&eg.FirstSeen, &eg.LastSeen, &eg.OccurrenceCount, &eg.Status, &eg.LastNotifiedAt,
+	)
+	if err != nil {
+		fmt.Printf("[Notification] Error fetching error group: %v\n", err)
+		return
+	}
+
+	err = database.DB.QueryRow(`
+		SELECT id, project_id, name, settings FROM environments WHERE id = $1
+	`, environmentID).Scan(&env.ID, &env.ProjectID, &env.Name, &settingsJSON)
+	if err != nil {
+		fmt.Printf("[Notification] Error fetching environment: %v\n", err)
+		return
+	}
+
+	if len(settingsJSON) > 0 {
+		json.Unmarshal(settingsJSON, &env.Settings)
+	}
+
+	// 2. Use NotificationService to handle logic
+	cfg := config.LoadConfig()
+	notifService := services.NewNotificationService(database.DB, cfg.BaseURL)
+
+	if notifService.ShouldNotify(&eg, &env.Settings.Notifications) {
+		err := notifService.SendNotification(&eg, &env, &env.Settings.Notifications)
+		if err != nil {
+			fmt.Printf("[Notification] Failed: %v\n", err)
+		}
+	}
 }

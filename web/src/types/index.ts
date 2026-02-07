@@ -99,3 +99,11 @@ export interface ProjectMember {
 
 export type ErrorLevel = 'error' | 'warn' | 'info';
 export type ErrorSource = 'frontend' | 'backend';
+export interface NotificationHistoryItem {
+    error_group_id: number;
+    message: string;
+    level: string;
+    notification_count: number;
+    last_notified_at: string;
+    occurrence_count: number;
+}

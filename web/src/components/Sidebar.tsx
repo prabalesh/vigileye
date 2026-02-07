@@ -19,7 +19,7 @@ export const Sidebar = () => {
         { name: 'Error Groups', href: `/projects/${projectId}/error-groups`, icon: AlertCircle },
         { name: 'Environments', href: `/projects/${projectId}/environments`, icon: Server },
         { name: 'Team', href: `/projects/${projectId}/team`, icon: Users },
-        ...(environmentId ? [{ name: 'Notifications', href: `/projects/${projectId}/environments/${environmentId}/notifications`, icon: Bell }] : []),
+        ...(environmentId ? [{ name: 'Setup Alerts', href: `/projects/${projectId}/environments/${environmentId}/settings`, icon: Bell }] : []),
     ] : [];
 
     return (
