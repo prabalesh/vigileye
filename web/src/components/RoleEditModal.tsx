@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Edit, Loader2, AlertCircle } from 'lucide-react';
+import { X, Edit, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useProjectMembers } from '../hooks/useProjectMembers';
 import type { ProjectMember } from '../types';
