@@ -1,12 +1,13 @@
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { LayoutDashboard, Settings, LogOut, Eye, Server, AlertCircle, BarChart3, Users } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, Eye, Server, AlertCircle, BarChart3, Users, Bell } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 
 export const Sidebar = () => {
     const location = useLocation();
     const { user, logout } = useAuthStore();
-    const { id } = useParams();
+    const { id, envId } = useParams();
     const projectId = id ? parseInt(id) : null;
+    const environmentId = envId ? parseInt(envId) : null;
 
     const navItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -18,6 +19,7 @@ export const Sidebar = () => {
         { name: 'Error Groups', href: `/projects/${projectId}/error-groups`, icon: AlertCircle },
         { name: 'Environments', href: `/projects/${projectId}/environments`, icon: Server },
         { name: 'Team', href: `/projects/${projectId}/team`, icon: Users },
+        ...(environmentId ? [{ name: 'Notifications', href: `/projects/${projectId}/environments/${environmentId}/notifications`, icon: Bell }] : []),
     ] : [];
 
     return (

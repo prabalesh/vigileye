@@ -5,7 +5,7 @@ import { getProject } from '../api/projects';
 import { getEnvironments, createEnvironment } from '../api/environments';
 import { getErrorGroups } from '../api/errorGroups';
 import type { Project, Environment } from '../types';
-import { Server, AlertCircle, Plus, Settings, Loader2, X, ChevronRight } from 'lucide-react';
+import { Server, AlertCircle, Plus, Settings, Loader2, X, ChevronRight, Bell } from 'lucide-react';
 
 export const ProjectOverview = () => {
     const { id } = useParams<{ id: string }>();
@@ -145,13 +145,22 @@ export const ProjectOverview = () => {
                                         </div>
                                     </div>
 
-                                    <Link
-                                        to={`/projects/${projectId}/error-groups?environment_id=${env.id}`}
-                                        className="mt-6 flex items-center justify-center space-x-2 w-full py-2.5 bg-slate-800 hover:bg-slate-750 text-white text-sm font-bold rounded-xl transition-all"
-                                    >
-                                        <AlertCircle size={16} />
-                                        <span>View Errors</span>
-                                    </Link>
+                                    <div className="mt-6 flex gap-2">
+                                        <Link
+                                            to={`/projects/${projectId}/error-groups?environment_id=${env.id}`}
+                                            className="flex-1 flex items-center justify-center space-x-2 py-2.5 bg-slate-800 hover:bg-slate-750 text-white text-sm font-bold rounded-xl transition-all"
+                                        >
+                                            <AlertCircle size={16} />
+                                            <span>View Errors</span>
+                                        </Link>
+                                        <Link
+                                            to={`/projects/${projectId}/environments/${env.id}/notifications`}
+                                            className="p-2.5 bg-slate-800 hover:bg-slate-750 text-slate-400 hover:text-blue-400 rounded-xl border border-transparent hover:border-blue-500/30 transition-all flex items-center justify-center"
+                                            title="Setup Notifications"
+                                        >
+                                            <Bell size={18} />
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                         ))

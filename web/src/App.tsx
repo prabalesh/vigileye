@@ -13,6 +13,7 @@ import { ErrorGroups } from './pages/ErrorGroups';
 import { ErrorGroupDetail } from './pages/ErrorGroupDetail';
 import { EnvironmentsTable } from './pages/EnvironmentsTable';
 import { ProjectTeam } from './pages/ProjectTeam';
+import { NotificationSettings } from './pages/NotificationSettings';
 
 // Components
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -58,6 +59,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/projects/:id" element={<ProjectOverview />} />
             <Route path="/projects/:id/environments" element={<EnvironmentsTable />} />
+            <Route path="/projects/:id/environments/:envId/notifications" element={<NotificationSettings />} />
             <Route path="/projects/:id/team" element={<ProjectTeam />} />
             <Route path="/projects/:id/error-groups" element={<ErrorGroups />} />
             <Route path="/projects/:id/error-groups/:groupId" element={<ErrorGroupDetail />} />
