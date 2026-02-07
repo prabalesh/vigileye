@@ -1,5 +1,5 @@
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { LayoutDashboard, Settings, LogOut, Eye, Server, AlertCircle, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, Eye, Server, AlertCircle, BarChart3, Users } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 
 export const Sidebar = () => {
@@ -17,6 +17,7 @@ export const Sidebar = () => {
         { name: 'Overview', href: `/projects/${projectId}`, icon: BarChart3 },
         { name: 'Error Groups', href: `/projects/${projectId}/error-groups`, icon: AlertCircle },
         { name: 'Environments', href: `/projects/${projectId}/environments`, icon: Server },
+        { name: 'Team', href: `/projects/${projectId}/team`, icon: Users },
     ] : [];
 
     return (

@@ -62,5 +62,13 @@ export interface Project {
     environments?: Environment[];
 }
 
+export interface ProjectMember {
+    user_id: number;
+    email: string;
+    name: string;
+    role: 'admin' | 'member';
+    created_at: string;
+}
+
 export type ErrorLevel = 'error' | 'warn' | 'info';
 export type ErrorSource = 'frontend' | 'backend';
