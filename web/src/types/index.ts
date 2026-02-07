@@ -50,6 +50,10 @@ export interface ErrorLog {
     user_id?: string;
     status_code?: number;
     extra_data?: Record<string, any>;
+    request_body?: string;
+    request_headers?: Record<string, string>;
+    response_body?: string;
+    response_time_ms?: number;
     resolved: boolean;
     created_at: string;
 }

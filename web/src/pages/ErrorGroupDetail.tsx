@@ -19,13 +19,16 @@ import {
     Calendar,
     ChevronDown,
     ChevronUp,
-    Activity
+    Activity,
+    Database
 } from 'lucide-react';
 import { safeFormat } from '../utils/date';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useQuery } from '@tanstack/react-query';
 import { useErrorGroupActions } from '../hooks/useErrorGroupActions';
+import { RequestDetailsView } from '../components/RequestDetailsView';
+import { ResponseDetailsView } from '../components/ResponseDetailsView';
 
 export const ErrorGroupDetail = () => {
     const { id, groupId } = useParams<{ id: string; groupId: string }>();
@@ -33,6 +36,7 @@ export const ErrorGroupDetail = () => {
     const gId = Number(groupId);
 
     const [expandedOccurrence, setExpandedOccurrence] = useState<number | null>(null);
+    const [detailTab, setDetailTab] = useState<'request' | 'response'>('request');
     const { resolve, ignore, reopen } = useErrorGroupActions(projectId);
     const [isActionLoading, setIsActionLoading] = useState(false);
 
@@ -193,6 +197,44 @@ export const ErrorGroupDetail = () => {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Request/Response Details Tabs */}
+                            <div className="border-t border-slate-800">
+                                <div className="flex border-b border-slate-800">
+                                    <button
+                                        onClick={() => setDetailTab('request')}
+                                        className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${detailTab === 'request' ? 'text-blue-500 border-b-2 border-blue-600 bg-blue-600/5' : 'text-slate-500 hover:text-white'}`}
+                                    >
+                                        Latest Request
+                                    </button>
+                                    <button
+                                        onClick={() => setDetailTab('response')}
+                                        className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${detailTab === 'response' ? 'text-emerald-500 border-b-2 border-emerald-600 bg-emerald-600/5' : 'text-slate-500 hover:text-white'}`}
+                                    >
+                                        Latest Response
+                                    </button>
+                                </div>
+                                <div className="p-8 bg-slate-950/20">
+                                    {occurrences.length > 0 ? (
+                                        detailTab === 'request' ? (
+                                            <RequestDetailsView
+                                                body={occurrences[0].request_body}
+                                                headers={occurrences[0].request_headers}
+                                            />
+                                        ) : (
+                                            <ResponseDetailsView
+                                                statusCode={occurrences[0].status_code}
+                                                responseTimeMs={occurrences[0].response_time_ms}
+                                                body={occurrences[0].response_body}
+                                            />
+                                        )
+                                    ) : (
+                                        <div className="py-10 text-center text-slate-600 italic text-sm">
+                                            No occurrences recorded yet.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Occurrences Timeline */}
@@ -235,8 +277,16 @@ export const ErrorGroupDetail = () => {
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-4">
+                                                {occ.response_time_ms && (
+                                                    <div className="hidden sm:flex items-center gap-1.5 text-slate-500 border-l border-slate-800 pl-4 font-mono text-[10px]">
+                                                        <Clock size={12} className="text-blue-500" />
+                                                        {occ.response_time_ms}ms
+                                                    </div>
+                                                )}
                                                 {occ.status_code && (
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black border font-mono ${occ.status_code >= 400 ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black border font-mono ${occ.status_code >= 500 ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.15)]' :
+                                                        occ.status_code >= 400 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                                            'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                                                         }`}>
                                                         {occ.status_code}
                                                     </span>
@@ -249,24 +299,28 @@ export const ErrorGroupDetail = () => {
                                             <div className="px-6 pb-6 pt-2 border-t border-slate-800/50 bg-slate-950/20">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
                                                     <div className="space-y-4">
-                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-600 border-b border-slate-800 pb-2">User Context</h4>
+                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-600 border-b border-slate-800 pb-2">User & Context</h4>
                                                         <div className="space-y-3 font-mono text-[11px]">
                                                             <div className="flex justify-between">
-                                                                <span className="text-slate-500">User Agent:</span>
-                                                                <span className="text-slate-300 text-right max-w-[150px] truncate">{occ.user_agent || 'N/A'}</span>
+                                                                <span className="text-slate-500">User ID:</span>
+                                                                <span className="text-white font-bold">{occ.user_id || 'unauthenticated'}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-slate-500">URL:</span>
+                                                                <span className="text-slate-300 break-all text-right max-w-[200px]">{occ.url || 'N/A'}</span>
                                                             </div>
                                                             <div className="flex justify-between">
                                                                 <span className="text-slate-500">Method:</span>
                                                                 <span className="text-blue-400 font-bold">{occ.method || 'GET'}</span>
                                                             </div>
                                                             <div className="flex justify-between">
-                                                                <span className="text-slate-500">Request ID:</span>
-                                                                <span className="text-slate-300">{occ.id}</span>
+                                                                <span className="text-slate-500">User Agent:</span>
+                                                                <span className="text-slate-300 text-right max-w-[150px] truncate" title={occ.user_agent}>{occ.user_agent || 'N/A'}</span>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div className="space-y-4">
-                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-600 border-b border-slate-800 pb-2">Extra Data</h4>
+                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-600 border-b border-slate-800 pb-2">Extra Metadata</h4>
                                                         {occ.extra_data ? (
                                                             <pre className="text-[10px] font-mono text-emerald-400 bg-slate-950 p-4 rounded-xl border border-slate-800/50 overflow-x-auto">
                                                                 {JSON.stringify(occ.extra_data, null, 2)}
@@ -274,6 +328,27 @@ export const ErrorGroupDetail = () => {
                                                         ) : (
                                                             <p className="text-[10px] italic text-slate-500 p-4 bg-slate-950/50 rounded-xl">No supplementary data attached.</p>
                                                         )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-8 space-y-6">
+                                                    <div>
+                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-4 flex items-center gap-2">
+                                                            <Database size={12} className="text-blue-500" />
+                                                            Request Details
+                                                        </h4>
+                                                        <RequestDetailsView body={occ.request_body} headers={occ.request_headers} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-4 flex items-center gap-2">
+                                                            <Terminal size={12} className="text-emerald-500" />
+                                                            Response Details
+                                                        </h4>
+                                                        <ResponseDetailsView
+                                                            statusCode={occ.status_code}
+                                                            responseTimeMs={occ.response_time_ms}
+                                                            body={occ.response_body}
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>
