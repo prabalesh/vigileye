@@ -44,13 +44,28 @@ func main() {
 	api.HandleFunc("/projects", handlers.GetProjects).Methods("GET")
 	api.HandleFunc("/projects", handlers.CreateProject).Methods("POST")
 	api.HandleFunc("/projects/{id:[0-9]+}", handlers.GetProject).Methods("GET")
-	api.HandleFunc("/projects/{id:[0-9]+}/members", handlers.AddProjectMember).Methods("POST")
-	api.HandleFunc("/projects/{id:[0-9]+}/members/{user_id:[0-9]+}", handlers.RemoveProjectMember).Methods("DELETE")
+
+	// Project Member routes
+	memberRouter := api.PathPrefix("/projects/{id:[0-9]+}/members").Subrouter()
+	memberRouter.HandleFunc("", handlers.GetProjectMembers).Methods("GET")
+	memberRouter.HandleFunc("/check-last-admin/{user_id:[0-9]+}", handlers.CheckLastAdmin).Methods("GET")
+
+	// Admin-only member routes
+	adminMemberRouter := memberRouter.PathPrefix("").Subrouter()
+	adminMemberRouter.Use(middleware.RequireAdmin)
+	adminMemberRouter.HandleFunc("", handlers.InviteMember).Methods("POST")
+	adminMemberRouter.HandleFunc("/{user_id:[0-9]+}", handlers.UpdateMemberRole).Methods("PATCH")
+	adminMemberRouter.HandleFunc("/{user_id:[0-9]+}", handlers.RemoveMember).Methods("DELETE")
+
 	api.HandleFunc("/projects/{id:[0-9]+}/environments", handlers.GetEnvironments).Methods("GET")
 	api.HandleFunc("/projects/{id:[0-9]+}/environments", handlers.CreateEnvironment).Methods("POST")
-	api.HandleFunc("/projects/{id:[0-9]+}/environments/{env_id:[0-9]+}", handlers.UpdateEnvironment).Methods("PATCH")
-	api.HandleFunc("/projects/{id:[0-9]+}/environments/{env_id:[0-9]+}", handlers.DeleteEnvironment).Methods("DELETE")
-	api.HandleFunc("/projects/{id:[0-9]+}/environments/{env_id:[0-9]+}/regenerate-key", handlers.RegenerateEnvironmentKey).Methods("POST")
+
+	// Admin-only environment routes
+	adminEnvRouter := api.PathPrefix("/projects/{id:[0-9]+}/environments/{env_id:[0-9]+}").Subrouter()
+	adminEnvRouter.Use(middleware.RequireAdmin)
+	adminEnvRouter.HandleFunc("", handlers.UpdateEnvironment).Methods("PATCH")
+	adminEnvRouter.HandleFunc("", handlers.DeleteEnvironment).Methods("DELETE")
+	adminEnvRouter.HandleFunc("/regenerate-key", handlers.RegenerateEnvironmentKey).Methods("POST")
 
 	api.HandleFunc("/projects/{id:[0-9]+}/error-groups", handlers.GetErrorGroups).Methods("GET")
 	api.HandleFunc("/projects/{id:[0-9]+}/error-groups/{group_id:[0-9]+}", handlers.GetErrorGroupDetail).Methods("GET")

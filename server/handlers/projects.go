@@ -95,14 +95,23 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type ProjectWithEnvs struct {
+	type ProjectWithMembers struct {
 		models.Project
-		Environments []models.Environment `json:"environments"`
+		Environments []models.Environment   `json:"environments"`
+		Members      []models.ProjectMember `json:"members"`
 	}
 
-	json.NewEncoder(w).Encode(ProjectWithEnvs{
+	json.NewEncoder(w).Encode(ProjectWithMembers{
 		Project:      p,
 		Environments: createdEnvs,
+		Members: []models.ProjectMember{
+			{
+				ProjectID: p.ID,
+				UserID:    userID,
+				Role:      "admin",
+				CreatedAt: p.CreatedAt, // Approximate
+			},
+		},
 	})
 }
 
@@ -138,81 +147,4 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(p)
-}
-
-func AddProjectMember(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(int)
-	vars := mux.Vars(r)
-	projectID, _ := strconv.Atoi(vars["id"])
-
-	// Check if requester is admin
-	var isAdmin bool
-	err := database.DB.QueryRow(`
-		SELECT EXISTS (
-			SELECT 1 FROM project_members 
-			WHERE project_id = $1 AND user_id = $2 AND role = 'admin'
-		) OR (SELECT owner_id FROM projects WHERE id = $1) = $2
-	`, projectID, userID).Scan(&isAdmin)
-
-	if err != nil || !isAdmin {
-		http.Error(w, "Unauthorized: Only admins can add members", http.StatusForbidden)
-		return
-	}
-
-	var input struct {
-		UserEmail string `json:"user_email"`
-		Role      string `json:"role"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		return
-	}
-
-	var newUserID int
-	err = database.DB.QueryRow("SELECT id FROM users WHERE email = $1", input.UserEmail).Scan(&newUserID)
-	if err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
-		return
-	}
-
-	_, err = database.DB.Exec(
-		"INSERT INTO project_members (project_id, user_id, role) VALUES ($1, $2, $3) ON CONFLICT (project_id, user_id) DO UPDATE SET role = $3",
-		projectID, newUserID, input.Role,
-	)
-	if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]bool{"success": true})
-}
-
-func RemoveProjectMember(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(int)
-	vars := mux.Vars(r)
-	projectID, _ := strconv.Atoi(vars["id"])
-	targetUserID, _ := strconv.Atoi(vars["user_id"])
-
-	// Check if requester is admin
-	var isAdmin bool
-	err := database.DB.QueryRow(`
-		SELECT EXISTS (
-			SELECT 1 FROM project_members 
-			WHERE project_id = $1 AND user_id = $2 AND role = 'admin'
-		) OR (SELECT owner_id FROM projects WHERE id = $1) = $2
-	`, projectID, userID).Scan(&isAdmin)
-
-	if err != nil || !isAdmin {
-		http.Error(w, "Unauthorized", http.StatusForbidden)
-		return
-	}
-
-	_, err = database.DB.Exec("DELETE FROM project_members WHERE project_id = $1 AND user_id = $2", projectID, targetUserID)
-	if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
 }
