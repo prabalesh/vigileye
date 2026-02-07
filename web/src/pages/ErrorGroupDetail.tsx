@@ -22,13 +22,13 @@ import {
     Activity,
     Database
 } from 'lucide-react';
-import { safeFormat } from '../utils/date';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useQuery } from '@tanstack/react-query';
 import { useErrorGroupActions } from '../hooks/useErrorGroupActions';
 import { RequestDetailsView } from '../components/RequestDetailsView';
 import { ResponseDetailsView } from '../components/ResponseDetailsView';
+import { safeFormat, safeFormatDistanceToNow } from '../utils/date';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export const ErrorGroupDetail = () => {
     const { id, groupId } = useParams<{ id: string; groupId: string }>();
@@ -257,41 +257,62 @@ export const ErrorGroupDetail = () => {
                                         className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden group/item transition-all"
                                     >
                                         <div
-                                            className="p-4 flex flex-wrap items-center justify-between gap-4 cursor-pointer hover:bg-slate-800/30"
+                                            className="p-5 cursor-pointer hover:bg-slate-800/30 transition-colors"
                                             onClick={() => setExpandedOccurrence(expandedOccurrence === occ.id ? null : occ.id)}
                                         >
-                                            <div className="flex items-center gap-6">
-                                                <div className="flex items-center gap-2 text-slate-400">
-                                                    <Clock size={16} />
-                                                    <span className="text-xs font-mono">{safeFormat(occ.timestamp, 'HH:mm:ss.SSS')}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-slate-500 border-l border-slate-800 pl-6">
-                                                    <User size={14} />
-                                                    <span className="text-xs font-medium">{occ.user_id || 'unauthenticated'}</span>
-                                                </div>
-                                                {occ.url && (
-                                                    <div className="hidden md:flex items-center gap-2 text-slate-500 border-l border-slate-800 pl-6 max-w-[200px]">
-                                                        <LinkIcon size={14} />
-                                                        <span className="text-[10px] font-mono truncate">{occ.url}</span>
+                                            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                                                <div className="space-y-3 flex-1">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 shrink-0">
+                                                            <Activity size={14} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Occurrence #{occ.id}</p>
+                                                            <p className="text-xs text-slate-300 font-mono" title={safeFormat(occ.timestamp, 'PPPpp')}>
+                                                                {safeFormat(occ.timestamp, 'MMM d, yyyy h:mm A')}
+                                                                <span className="text-slate-500 ml-2">({safeFormatDistanceToNow(occ.timestamp)} ago)</span>
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                {occ.response_time_ms && (
-                                                    <div className="hidden sm:flex items-center gap-1.5 text-slate-500 border-l border-slate-800 pl-4 font-mono text-[10px]">
-                                                        <Clock size={12} className="text-blue-500" />
-                                                        {occ.response_time_ms}ms
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-8 pt-2 border-t border-slate-800/50">
+                                                        <div className="flex items-center gap-2 text-slate-400">
+                                                            <LinkIcon size={12} className="text-blue-500" />
+                                                            <span className="text-[10px] font-mono truncate" title={occ.url}>URL: {occ.url || '/'}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-slate-400">
+                                                            <User size={12} className="text-indigo-400" />
+                                                            <span className="text-[10px] font-medium">User: {occ.user_id || 'unauthenticated'}</span>
+                                                        </div>
                                                     </div>
-                                                )}
-                                                {occ.status_code && (
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black border font-mono ${occ.status_code >= 500 ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.15)]' :
-                                                        occ.status_code >= 400 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                                                            'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                                                        }`}>
-                                                        {occ.status_code}
-                                                    </span>
-                                                )}
-                                                {expandedOccurrence === occ.id ? <ChevronUp size={18} className="text-slate-600" /> : <ChevronDown size={18} className="text-slate-600" />}
+
+                                                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                                                        <span className="px-2 py-0.5 rounded text-[10px] font-black bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-tighter">
+                                                            Method: {occ.method || 'GET'}
+                                                        </span>
+                                                        {occ.status_code && (
+                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-black border font-mono tracking-tighter ${occ.status_code >= 500 ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                                                occ.status_code >= 400 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                                                    'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                                                }`}>
+                                                                Status: {occ.status_code}
+                                                            </span>
+                                                        )}
+                                                        {occ.response_time_ms && (
+                                                            <div className="flex items-center gap-1.5 text-slate-500 font-mono text-[10px] bg-slate-800/50 px-2 py-0.5 rounded border border-slate-700/50">
+                                                                <Clock size={10} className="text-blue-500" />
+                                                                {occ.response_time_ms}ms
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col items-end gap-2 shrink-0">
+                                                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${expandedOccurrence === occ.id ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 group-hover/item:border-slate-600'}`}>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">{expandedOccurrence === occ.id ? 'Close Details' : 'View Request Details'}</span>
+                                                        {expandedOccurrence === occ.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
