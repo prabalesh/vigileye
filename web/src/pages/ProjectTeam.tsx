@@ -20,13 +20,18 @@ import { InviteMemberModal } from '../components/InviteMemberModal';
 import { RoleEditModal } from '../components/RoleEditModal';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { useAuthStore } from '../stores/authStore';
 
 export const ProjectTeam = () => {
     const { id } = useParams<{ id: string }>();
     const projectId = Number(id);
 
     const [project, setProject] = useState<Project | null>(null);
-    const { members = [], isLoading, removeMember, isRemoving } = useProjectMembers(projectId);
+    const { user } = useAuthStore();
+    const { members = [], isLoading, removeMember } = useProjectMembers(projectId);
+
+    const currentUserMember = members.find(m => m.user_id === user?.id);
+    const isAdmin = currentUserMember?.role === 'admin';
 
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<ProjectMember | null>(null);
@@ -75,13 +80,15 @@ export const ProjectTeam = () => {
                         </h1>
                     </div>
 
-                    <button
-                        onClick={() => setIsInviteModalOpen(true)}
-                        className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-2xl font-black transition-all shadow-lg shadow-blue-600/20 active:scale-95 shrink-0"
-                    >
-                        <UserPlus size={20} />
-                        <span>Invite Member</span>
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => setIsInviteModalOpen(true)}
+                            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-2xl font-black transition-all shadow-lg shadow-blue-600/20 active:scale-95 shrink-0"
+                        >
+                            <UserPlus size={20} />
+                            <span>Invite Member</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Content */}
@@ -114,7 +121,7 @@ export const ProjectTeam = () => {
                                         <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Member</th>
                                         <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Role</th>
                                         <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Joined Date</th>
-                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Actions</th>
+                                        {isAdmin && <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Actions</th>}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -153,25 +160,26 @@ export const ProjectTeam = () => {
                                                     {format(new Date(member.created_at), 'MMM d, yyyy')}
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={() => setSelectedMemberForEdit(member)}
-                                                        className="p-2 bg-slate-800 hover:bg-blue-600/20 hover:text-blue-400 text-slate-400 rounded-xl transition-all border border-slate-700 hover:border-blue-500/30"
-                                                        title="Edit Role"
-                                                    >
-                                                        <Edit size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleRemoveMember(member)}
-                                                        disabled={isRemoving}
-                                                        className="p-2 bg-slate-800 hover:bg-red-600/20 hover:text-red-400 text-slate-400 rounded-xl transition-all border border-slate-700 hover:border-red-500/30 disabled:opacity-50"
-                                                        title="Remove Member"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            </td>
+                                            {isAdmin && (
+                                                <td className="px-8 py-6 text-right">
+                                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => setSelectedMemberForEdit(member)}
+                                                            className="p-2 bg-slate-800 hover:bg-blue-600/20 hover:text-blue-400 text-slate-400 rounded-xl transition-all border border-slate-700 hover:border-blue-500/30"
+                                                            title="Edit Role"
+                                                        >
+                                                            <Edit size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRemoveMember(member)}
+                                                            className="p-2 bg-slate-800 hover:bg-red-600/20 hover:text-red-400 text-slate-400 rounded-xl transition-all border border-slate-700 hover:border-red-500/30 disabled:opacity-50"
+                                                            title="Remove Member"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            )}
                                         </tr>
                                     ))}
                                 </tbody>

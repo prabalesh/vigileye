@@ -22,7 +22,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     onClose,
     onSuccess
 }) => {
-    const { inviteMember, isInviting } = useProjectMembers(projectId);
+    const { inviteMember } = useProjectMembers(projectId);
     const { register, handleSubmit, formState: { errors }, reset } = useForm<InviteFormData>({
         defaultValues: {
             role: 'member'
@@ -33,7 +33,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
 
     const onSubmit = async (data: InviteFormData) => {
         try {
-            await inviteMember(data);
+            await inviteMember(data.email, data.role);
             toast.success('Member invited successfully');
             reset();
             onSuccess();
@@ -106,10 +106,9 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                         </button>
                         <button
                             type="submit"
-                            disabled={isInviting}
                             className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 active:scale-95"
                         >
-                            {isInviting ? <Loader2 size={20} className="animate-spin" /> : <span>Invite</span>}
+                            <span>Invite</span>
                         </button>
                     </div>
                 </form>

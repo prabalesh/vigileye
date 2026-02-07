@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     getProjectMembers,
-    inviteMemberAPI,
-    updateMemberRoleAPI,
-    removeMemberAPI
+    inviteMember as inviteMemberAPI,
+    updateMemberRole as updateMemberRoleAPI,
+    removeMember as removeMemberAPI
 } from '../api/team';
 
 export function useProjectMembers(projectId: number) {
@@ -14,38 +14,27 @@ export function useProjectMembers(projectId: number) {
         queryFn: () => getProjectMembers(projectId),
     });
 
-    const inviteMutation = useMutation({
-        mutationFn: (data: { email: string; role: string }) =>
-            inviteMemberAPI(projectId, data.email, data.role),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['project-members', projectId] });
-        },
-    });
+    const inviteMember = async (email: string, role: string) => {
+        await inviteMemberAPI(projectId, email, role);
+        queryClient.invalidateQueries({ queryKey: ['project-members', projectId] });
+    };
 
-    const updateRoleMutation = useMutation({
-        mutationFn: (data: { userId: number; role: string }) =>
-            updateMemberRoleAPI(projectId, data.userId, data.role),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['project-members', projectId] });
-        },
-    });
+    const updateRole = async (userId: number, role: string) => {
+        await updateMemberRoleAPI(projectId, userId, role);
+        queryClient.invalidateQueries({ queryKey: ['project-members', projectId] });
+    };
 
-    const removeMutation = useMutation({
-        mutationFn: (userId: number) => removeMemberAPI(projectId, userId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['project-members', projectId] });
-        },
-    });
+    const removeMember = async (userId: number) => {
+        await removeMemberAPI(projectId, userId);
+        queryClient.invalidateQueries({ queryKey: ['project-members', projectId] });
+    };
 
     return {
         members,
         isLoading,
         error,
-        inviteMember: inviteMutation.mutateAsync,
-        updateRole: updateRoleMutation.mutateAsync,
-        removeMember: removeMutation.mutateAsync,
-        isInviting: inviteMutation.isPending,
-        isUpdating: updateRoleMutation.isPending,
-        isRemoving: removeMutation.isPending,
+        inviteMember,
+        updateRole,
+        removeMember
     };
 }

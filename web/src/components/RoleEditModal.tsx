@@ -20,7 +20,7 @@ export const RoleEditModal: React.FC<RoleEditModalProps> = ({
     onClose,
     onSuccess
 }) => {
-    const { updateRole, isUpdating } = useProjectMembers(projectId);
+    const { updateRole } = useProjectMembers(projectId);
     const [role, setRole] = useState<'admin' | 'member'>('member');
     const [isLastAdmin, setIsLastAdmin] = useState(false);
     const [checkingLastAdmin, setCheckingLastAdmin] = useState(false);
@@ -60,7 +60,7 @@ export const RoleEditModal: React.FC<RoleEditModalProps> = ({
         }
 
         try {
-            await updateRole({ userId: member.user_id, role });
+            await updateRole(member.user_id, role);
             toast.success('Role updated successfully');
             onSuccess();
             onClose();
@@ -143,10 +143,10 @@ export const RoleEditModal: React.FC<RoleEditModalProps> = ({
                         </button>
                         <button
                             type="submit"
-                            disabled={isUpdating || (isLastAdmin && role === 'member') || checkingLastAdmin}
+                            disabled={(isLastAdmin && role === 'member') || checkingLastAdmin}
                             className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 active:scale-95"
                         >
-                            {isUpdating ? <Loader2 size={20} className="animate-spin" /> : <span>Update</span>}
+                            <span>Update</span>
                         </button>
                     </div>
                 </form>

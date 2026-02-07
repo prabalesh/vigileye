@@ -6,17 +6,17 @@ export async function getProjectMembers(projectId: number): Promise<ProjectMembe
     return response.data;
 }
 
-export async function inviteMemberAPI(projectId: number, email: string, role: string): Promise<ProjectMember> {
+export async function inviteMember(projectId: number, email: string, role: string): Promise<ProjectMember> {
     const response = await client.post(`/api/projects/${projectId}/members`, { email, role });
     return response.data;
 }
 
-export async function updateMemberRoleAPI(projectId: number, userId: number, role: string): Promise<ProjectMember> {
+export async function updateMemberRole(projectId: number, userId: number, role: string): Promise<ProjectMember> {
     const response = await client.patch(`/api/projects/${projectId}/members/${userId}`, { role });
     return response.data;
 }
 
-export async function removeMemberAPI(projectId: number, userId: number): Promise<void> {
+export async function removeMember(projectId: number, userId: number): Promise<void> {
     await client.delete(`/api/projects/${projectId}/members/${userId}`);
 }
 

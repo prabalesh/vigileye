@@ -54,6 +54,29 @@ export interface ErrorLog {
     created_at: string;
 }
 
+export interface ThresholdTrigger {
+    enabled: boolean;
+    count: number;
+    window_minutes: number;
+}
+
+export interface NotificationTriggers {
+    new_error: boolean;
+    threshold: ThresholdTrigger;
+    spike_on_ignored: boolean;
+}
+
+export interface TelegramNotification {
+    enabled: boolean;
+    bot_token: string;
+    chat_id: string;
+    triggers: NotificationTriggers;
+}
+
+export interface NotificationSettings {
+    telegram: TelegramNotification;
+}
+
 export interface Project {
     id: number;
     name: string;
