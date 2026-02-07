@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -122,6 +121,6 @@ func main() {
 		}
 	})
 
-	fmt.Printf("Vigileye Server starting on port %s in %s mode...\n", cfg.Port, cfg.Env)
+	log.Printf("🚀 Vigileye Server starting on port %s in %s mode...", cfg.Port, cfg.Env)
 	log.Fatal(http.ListenAndServe(":"+cfg.Port, handler))
 }

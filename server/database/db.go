@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -24,7 +23,7 @@ func ConnectDB(databaseURL string) {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
 
-	fmt.Println("Successfully connected to database")
+	log.Printf("✅ Successfully connected to database")
 }
 
 func RunMigrations(migrationsDir string) {
@@ -64,7 +63,7 @@ func RunMigrations(migrationsDir string) {
 		}
 
 		// 4. Apply migration
-		fmt.Printf("Applying migration: %s\n", versionName)
+		log.Printf("📦 Applying migration: %s", versionName)
 		filePath := migrationsDir + "/" + versionName
 		content, err := os.ReadFile(filePath)
 		if err != nil {
@@ -95,5 +94,5 @@ func RunMigrations(migrationsDir string) {
 		}
 	}
 
-	fmt.Println("Migrations completed successfully")
+	log.Printf("✅ Migrations completed successfully")
 }

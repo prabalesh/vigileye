@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -74,21 +74,33 @@ func LogError(w http.ResponseWriter, r *http.Request) {
 			input.Source, input.Level, input.Timestamp).Scan(&groupID)
 
 		if err != nil {
-			fmt.Printf("Error creating error group: %v\n", err)
+			log.Printf("[LogError] Error creating error group: %v", err)
 			http.Error(w, "Database error", http.StatusInternalServerError)
 			return
 		}
 	} else {
-		// Update existing group and auto-reopen if resolved/ignored
+		// Update existing group - only auto-reopen if it was resolved (not ignored)
 		_, err = tx.Exec(`
 			UPDATE error_groups 
-			SET last_seen = $1, occurrence_count = occurrence_count + 1, status = 'unresolved', 
-			    resolved_at = NULL, resolved_by = NULL
+			SET last_seen = $1, 
+			    occurrence_count = occurrence_count + 1,
+			    status = CASE 
+			        WHEN status = 'resolved' THEN 'unresolved'
+			        ELSE status
+			    END,
+			    resolved_at = CASE 
+			        WHEN status = 'resolved' THEN NULL
+			        ELSE resolved_at
+			    END,
+			    resolved_by = CASE 
+			        WHEN status = 'resolved' THEN NULL
+			        ELSE resolved_by
+			    END
 			WHERE id = $2
 		`, input.Timestamp, groupID)
 
 		if err != nil {
-			fmt.Printf("Error updating error group: %v\n", err)
+			log.Printf("[LogError] Error updating error group: %v", err)
 			http.Error(w, "Database error", http.StatusInternalServerError)
 			return
 		}
@@ -105,7 +117,7 @@ func LogError(w http.ResponseWriter, r *http.Request) {
 		input.RequestBody, input.RequestHeaders, input.ResponseBody, input.ResponseTimeMs)
 
 	if err != nil {
-		fmt.Printf("Error logging to DB: %v\n", err)
+		log.Printf("[LogError] Error inserting error log: %v", err)
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
@@ -186,7 +198,7 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := database.DB.Query(sqlQuery, args...)
 	if err != nil {
-		fmt.Printf("Query error: %v\n", err)
+		log.Printf("[GetErrors] Query error: %v", err)
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
@@ -201,7 +213,7 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 			&l.ExtraData, &l.RequestBody, &l.RequestHeaders, &l.ResponseBody, &l.ResponseTimeMs, &l.Resolved, &l.CreatedAt,
 		)
 		if err != nil {
-			fmt.Printf("Scan error: %v\n", err)
+			log.Printf("[GetErrors] Scan error: %v", err)
 			continue
 		}
 		logs = append(logs, l)
@@ -304,7 +316,7 @@ func triggerNotifications(projectID, environmentID, groupID int, logEntry models
 		&eg.FirstSeen, &eg.LastSeen, &eg.OccurrenceCount, &eg.Status, &eg.LastNotifiedAt,
 	)
 	if err != nil {
-		fmt.Printf("[Notification] Error fetching error group: %v\n", err)
+		log.Printf("[Notification] Error fetching error group: %v", err)
 		return
 	}
 
@@ -312,12 +324,24 @@ func triggerNotifications(projectID, environmentID, groupID int, logEntry models
 		SELECT id, project_id, name, settings FROM environments WHERE id = $1
 	`, environmentID).Scan(&env.ID, &env.ProjectID, &env.Name, &settingsJSON)
 	if err != nil {
-		fmt.Printf("[Notification] Error fetching environment: %v\n", err)
+		log.Printf("[Notification] Error fetching environment: %v", err)
 		return
 	}
 
+	log.Printf("[Notification] Raw settingsJSON from DB: %s", string(settingsJSON))
+
 	if len(settingsJSON) > 0 {
-		json.Unmarshal(settingsJSON, &env.Settings)
+		if err := json.Unmarshal(settingsJSON, &env.Settings); err != nil {
+			log.Printf("[Notification] Error unmarshaling settings: %v", err)
+			return
+		}
+		log.Printf("[Notification] Unmarshaled settings: %+v", env.Settings)
+		log.Printf("[Notification] Telegram config: enabled=%v, bot_token_len=%d, chat_id=%s",
+			env.Settings.Notifications.Telegram.Enabled,
+			len(env.Settings.Notifications.Telegram.BotToken),
+			env.Settings.Notifications.Telegram.ChatID)
+	} else {
+		log.Printf("[Notification] No settings found in database for environment_id=%d", environmentID)
 	}
 
 	// 2. Use NotificationService to handle logic
@@ -325,9 +349,12 @@ func triggerNotifications(projectID, environmentID, groupID int, logEntry models
 	notifService := services.NewNotificationService(database.DB, cfg.BaseURL)
 
 	if notifService.ShouldNotify(&eg, &env.Settings.Notifications) {
+		log.Printf("[Notification] Triggering notification for error_group_id=%d", groupID)
 		err := notifService.SendNotification(&eg, &env, &env.Settings.Notifications)
 		if err != nil {
-			fmt.Printf("[Notification] Failed: %v\n", err)
+			log.Printf("[Notification] Failed to send: %v", err)
 		}
+	} else {
+		log.Printf("[Notification] Skipped for error_group_id=%d (conditions not met)", groupID)
 	}
 }

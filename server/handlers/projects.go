@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -22,6 +23,7 @@ func GetProjects(w http.ResponseWriter, r *http.Request) {
 		GROUP BY p.id
 	`, userID)
 	if err != nil {
+		log.Printf("[GetProjects] Query error: %v", err)
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
@@ -46,12 +48,14 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 		Name string `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		log.Printf("[CreateProject] Invalid input: %v", err)
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
 	tx, err := database.DB.Begin()
 	if err != nil {
+		log.Printf("[CreateProject] Transaction begin error: %v", err)
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
@@ -64,6 +68,7 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 	).Scan(&p.ID, &p.Name, &p.OwnerID, &p.CreatedAt)
 
 	if err != nil {
+		log.Printf("[CreateProject] Insert project error: %v", err)
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
@@ -74,23 +79,35 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 
 	for _, name := range envs {
 		var e models.Environment
+		var settingsJSON []byte
 		err = tx.QueryRow("INSERT INTO environments (project_id, name) VALUES ($1, $2) RETURNING id, project_id, name, api_key, settings, is_active, created_at", p.ID, name).
-			Scan(&e.ID, &e.ProjectID, &e.Name, &e.APIKey, &e.Settings, &e.IsActive, &e.CreatedAt)
+			Scan(&e.ID, &e.ProjectID, &e.Name, &e.APIKey, &settingsJSON, &e.IsActive, &e.CreatedAt)
 		if err != nil {
+			log.Printf("[CreateProject] Insert environment '%s' error: %v", name, err)
 			http.Error(w, "Database error creating environments", http.StatusInternalServerError)
 			return
 		}
+
+		// Unmarshal settings if present
+		if len(settingsJSON) > 0 {
+			if err := json.Unmarshal(settingsJSON, &e.Settings); err != nil {
+				log.Printf("[CreateProject] Unmarshal settings for '%s' error: %v", name, err)
+			}
+		}
+
 		createdEnvs = append(createdEnvs, e)
 	}
 
 	// Add creator as admin member
 	_, err = tx.Exec("INSERT INTO project_members (project_id, user_id, role) VALUES ($1, $2, 'admin')", p.ID, userID)
 	if err != nil {
+		log.Printf("[CreateProject] Insert project member error: %v", err)
 		http.Error(w, "Database error adding member", http.StatusInternalServerError)
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
+		log.Printf("[CreateProject] Transaction commit error: %v", err)
 		http.Error(w, "Database error committing", http.StatusInternalServerError)
 		return
 	}
@@ -131,6 +148,7 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 	`, projectID, userID).Scan(&exists)
 
 	if err != nil || !exists {
+		log.Printf("[GetProject] Access check error or not found: err=%v, exists=%v", err, exists)
 		http.Error(w, "Project not found or access denied", http.StatusNotFound)
 		return
 	}
@@ -142,6 +160,7 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 	).Scan(&p.ID, &p.Name, &p.OwnerID, &p.CreatedAt)
 
 	if err != nil {
+		log.Printf("[GetProject] Query error: %v", err)
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}

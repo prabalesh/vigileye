@@ -27,30 +27,37 @@ func NewNotificationService(db *sql.DB, baseURL string) *NotificationService {
 // ShouldNotify determines if a notification should be sent
 func (s *NotificationService) ShouldNotify(errorGroup *models.ErrorGroup, settings *models.NotificationSettings) bool {
 	if settings == nil || !settings.Telegram.Enabled {
+		log.Printf("[ShouldNotify] Skipping: settings nil or telegram disabled")
 		return false
 	}
 
 	triggers := settings.Telegram.Triggers
 
-	// New error (first occurrence)
+	// Skip ignored errors unless they're spiking
+	if errorGroup.Status == "ignored" {
+		if triggers.SpikeOnIgnored && s.hasSpike(errorGroup) {
+			log.Printf("[ShouldNotify] Ignored error spiking: error_group_id=%d", errorGroup.ID)
+			return true
+		}
+		log.Printf("[ShouldNotify] Skipping ignored error: error_group_id=%d", errorGroup.ID)
+		return false
+	}
+
+	// New error (first occurrence) or reopened error
 	if triggers.NewError && errorGroup.OccurrenceCount == 1 {
+		log.Printf("[ShouldNotify] New error detected: error_group_id=%d", errorGroup.ID)
 		return true
 	}
 
 	// Threshold reached
 	if triggers.Threshold.Enabled {
 		if s.hasReachedThreshold(errorGroup, triggers.Threshold) {
+			log.Printf("[ShouldNotify] Threshold reached: error_group_id=%d", errorGroup.ID)
 			return true
 		}
 	}
 
-	// Ignored error spike
-	if triggers.SpikeOnIgnored && errorGroup.Status == "ignored" {
-		if s.hasSpike(errorGroup) {
-			return true
-		}
-	}
-
+	log.Printf("[ShouldNotify] No trigger conditions met: error_group_id=%d", errorGroup.ID)
 	return false
 }
 
